@@ -1116,37 +1116,47 @@ class ScholarQuerier(object):
             return None
 
 
-def txt(querier, with_globals):
-    if with_globals:
-        # If we have any articles, check their attribute labels to get
-        # the maximum length -- makes for nicer alignment.
-        max_label_len = 0
-        if len(querier.articles) > 0:
-            items = sorted(list(querier.articles[0].attrs.values()),
-                           key=lambda item: item[2])
-            max_label_len = max([len(str(item[1])) for item in items])
+def txt(querier):
+#    if with_globals:
+#        # If we have any articles, check their attribute labels to get
+#        # the maximum length -- makes for nicer alignment.
+#        max_label_len = 0
+#        if len(querier.articles) > 0:
+#            items = sorted(list(querier.articles[0].attrs.values()),
+#                           key=lambda item: item[2])
+#            max_label_len = max([len(str(item[1])) for item in items])
 
         # Get items sorted in specified order:
-        items = sorted(list(querier.query.attrs.values()), key=lambda item: item[2])
+#        items = sorted(list(querier.query.attrs.values()), key=lambda item: item[2])
         # Find largest label length:
-        max_label_len = max([len(str(item[1])) for item in items] + [max_label_len])
-        fmt = '[G] %%%ds %%s' % max(0, max_label_len-4)
-        for item in items:
-            if item[0] is not None:
-                print(fmt % (item[1], item[0]))
-        if len(items) > 0:
-            print
+#        max_label_len = max([len(str(item[1])) for item in items] + [max_label_len])
+#        fmt = '[G] %%%ds %%s' % max(0, max_label_len-4)
+#        for item in items:
+#            if item[0] is not None:
+#                print(fmt % (item[1], item[0]))
+#        if len(items) > 0:
+#            print
 
     articles = querier.articles
     for art in articles:
         print(encode(art.as_txt()) + '\n')
 
-def csv(querier, header=False, sep='|'):
+def paper_dict(querier, header=False, sep='|'):
     articles = querier.articles
+    articles_dict = []
     for art in articles:
+        article = {}
         result = art.as_csv(header=header, sep=sep)
-        print(encode(result))
-        header = False
+        result = encode(result)
+        result = result.split("|")
+        article['name'] = result[0]
+        article['pub_year'] = result[2]        
+        article['citation_from_n'] = result[3]
+        article['cluster_id'] = result[5]
+        article['citation_list_url'] = result[7]
+        article['abstract'] = result[10]
+        articles_dict.append(article)
+    return articles_dict
 
 def citation_export(querier):
     articles = querier.articles
@@ -1308,7 +1318,7 @@ scholar.py -c 5 -a "albert einstein" -t --none "quantum theory" --after 1970"""
     elif options.citation is not None:
         citation_export(querier)
     else:
-        txt(querier, with_globals=options.txt_globals)
+        txt(querier)
 
     if options.cookie_file:
         querier.save_cookies()
@@ -1317,3 +1327,26 @@ scholar.py -c 5 -a "albert einstein" -t --none "quantum theory" --after 1970"""
 
 if __name__ == "__main__":
     sys.exit(main())
+
+def get_articles_from_cluster_id(cluster_id):
+    querier = ScholarQuerier()
+    settings = ScholarSettings()
+
+    querier.apply_settings(settings)
+
+    query = ClusterScholarQuery(cluster=cluster_id)
+
+    querier.send_query(query)
+
+    return paper_dict(querier)
+def get_articles_from_citation_list_url(citation_url):
+    querier = ScholarQuerier()
+    settings = ScholarSettings()
+
+    querier.apply_settings(settings)
+
+    query = CitationScholarQuery(citation_url)
+    querier.send_query(query)
+
+    return paper_dict(querier)
+    
