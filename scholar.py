@@ -738,7 +738,16 @@ class ClusterScholarQuery(ScholarQuery):
                           if self.num_results is not None else '')
 
         return self.SCHOLAR_CLUSTER_URL % urlargs
-
+class CitationScholarQuery(ScholarQuery):
+    """
+    This version pulls up lists of citations from a citation list url.
+    """
+    def __init__(self, citation_list_url):
+        ScholarQuery.__init__(self)
+        self._add_attribute_type('num_results', 'Results', 0)
+        self.url = citation_list_url
+    def get_url(self):
+        return self.url
 
 class SearchScholarQuery(ScholarQuery):
     """
